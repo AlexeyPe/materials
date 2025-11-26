@@ -1,7 +1,24 @@
 # Materials
 
-materials - это библиотека с информацией о горных породах/рудах/минералах и другом.<br>
-materials is a library with information about rocks/ores/minerals and more.
+materials - is a library of material data.<br>
+materials - это библиотека данных о материалах.
+
+1 material = 1 struct
+
+Macros are used to create structures.<br>
+Materials support localization.
+
+Для создания структур используются макросы.<br>
+Материалы поддерживают локализацию.
+
+trait | Rock |
+| -- | -- |
+*Material | ✔ |
+Rock | ⌛✍ |
+Density | ⌛✍ |
+Melting | ⌛✍ |
+
+`* - has localization`
 
 ## Versions / Версии
 
