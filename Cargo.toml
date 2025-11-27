@@ -1,11 +1,12 @@
 [package]
 name = "materials"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["AlexeyPe<alexey_pe@ro.ru>"]
 description = "Data on rocks, ores, minerals, etc."
 keywords = ["data"]
 license = "MIT"
 repository = "https://github.com/AlexeyPe/materials"
+documentation = "https://docs.rs/materials"
 
 [dependencies]
