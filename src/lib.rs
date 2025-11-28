@@ -12,15 +12,59 @@ type Kelvin = f32;
 /// unit for temperature, °C <br>
 /// Еденица температуры, °C
 type Celsius = f32;
-/// Grams per cm3, g/cm³ <br>
-/// Грамм на см3, г/см³
+/// Grams per cm³, g/cm³ <br>
+/// Грамм на см³, г/см³
 type Gsm3 = f32;
-/// Kilogram per m3, kg/m³ <br>
-/// Килограмм на м3, кг/м³
+/// Kilogram per m³, kg/m³ <br>
+/// Килограмм на м³, кг/м³
 type KGm3 = f32;
+/// MJ/kg
+/// МДж/кг
+#[allow(non_camel_case_types)]
+type MJ_kg = f32;
+/// kkal/kg
+/// ккал/кг
+#[allow(non_camel_case_types)]
+type kkal_kg = f32;
 
+macro_rules! new_elem {
+    (
+        // example_1 - Gold
+        $struct_name:ident,
+        // example_1 - names: [RU:"Золото", EN:"Gold"]
+        // example_2 - names: [EN:"Gold"]
+        names: [$($field_name:path : $lang_literal:literal),*],
+        // example_1 - element: [1, "H"]
+        element: [$number:expr, $symbol:literal],
+        // example_1 - dencity_gsm3: [1.1, 1.5]
+        dencity_gsm3: [$density_min:expr, $density_max:expr],
+        // example_1 - melting_c: [1450.0, 1500.0]
+        $(melting_c:[$melting_min_c:expr, $melting_max_c:expr],)?
+        // example_1 - ignition_c: [100.0, 110.0]
+        $(ignition_c:[$ignition_min:expr, $ignition_max:expr],)?
+        // example_1 - burning_c: [500.0, 610.0]
+        $(burning_c:[$burning_min:expr, $burning_max:expr],)?
+        // example_1 - heat_value_mj: [14.0, 15.5]
+        $(heat_value_mj:[$heat_value_min:expr, $heat_value_max:expr],)?
+    ) => {
+        new_mat!($struct_name, names:[$($field_name : $lang_literal),*]);
+        mat_add!($struct_name, dencity_gsm3:[$density_min, $density_max]);
+        mat_add!($struct_name, $number, $symbol);
+        $(
+            mat_add!($struct_name, melting:[$melting_min_c, $melting_max_c]);
+        )?
+        $(
+            mat_add!($struct_name, ignition_c:[$ignition_min, $ignition_max]);
+        )?
+        $(
+            mat_add!($struct_name, burning_c:[$burning_min, $burning_max]);
+        )?
+        $(
+            mat_add!($struct_name, heat_value_mj:[$heat_value_min, $heat_value_max]);
+        )?
+    };
+}
 macro_rules! new_rock {
-    // new rock material with names + group
     (
         // example_1 - Basalt
         $struct_name:ident,
@@ -30,33 +74,32 @@ macro_rules! new_rock {
         // example_1 - group: [Igneous, GroupRock::Igneous]
         // example_2 - group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Extrusive]
         group: [$group_trait:ident, $group:path $(, $subgroup:ident, $subgroup_val:path)?],
+        // example_1 - dencity_gsm3: [1.1, 1.5]
+        dencity_gsm3: [$density_min:expr, $density_max:expr],
+        // example_1 - melting_c: [1450.0, 1500.0]
+        $(melting_c:[$melting_min_c:expr, $melting_max_c:expr],)?
+        // example_1 - ignition_c: [100.0, 110.0]
+        $(ignition_c:[$ignition_min:expr, $ignition_max:expr],)?
+        // example_1 - burning_c: [500.0, 610.0]
+        $(burning_c:[$burning_min:expr, $burning_max:expr],)?
+        // example_1 - heat_value_mj: [14.0, 15.5]
+        $(heat_value_mj:[$heat_value_min:expr, $heat_value_max:expr],)?
     ) => {
         new_mat!($struct_name, names:[$($field_name : $lang_literal),*]);
-        mat_add!($struct_name, $group_trait, $group, $($subgroup, $subgroup_val)?);
-    };
-    // new rock material with names + group + melting
-    (
-        $struct_name:ident,
-        names: [$($field_name:path : $lang_literal:literal),*],
-        group: [$group_trait:ident, $group:path $(, $subgroup:ident, $subgroup_val:path)?],
-        melting_c: [$melting_min_c:expr, $melting_max_c:expr],
-    ) => {
-        new_mat!($struct_name, names:[$($field_name : $lang_literal),*]);
-        mat_add!($struct_name, $group_trait, $group, $($subgroup, $subgroup_val)?);
-        mat_add!($struct_name, melting_min:$melting_min_c, melting_max:$melting_max_c);
-    };
-    // new rock material with names + group + melting + density
-    (
-        $struct_name:ident,
-        names: [$($field_name:path : $lang_literal:literal),*],
-        group: [$group_trait:ident, $group:path $(, $subgroup:ident, $subgroup_val:path)?],
-        melting_c: [$melting_min_c:expr, $melting_max_c:expr],
-        dencity_gsm3: [$density_min_gcm3:expr, $density_max_gcm3:expr],
-    ) => {
-        new_mat!($struct_name, names:[$($field_name : $lang_literal),*]);
-        mat_add!($struct_name, $group_trait, $group, $($subgroup, $subgroup_val)?);
-        mat_add!($struct_name, melting_min:$melting_min_c, melting_max:$melting_max_c);
-        mat_add!($struct_name, density_min:$density_min_gcm3, density_max:$density_max_gcm3);
+        mat_add!($struct_name, dencity_gsm3:[$density_min, $density_max]);
+        mat_add!($struct_name, $group_trait, $group $(, $subgroup, $subgroup_val)?);
+        $(
+            mat_add!($struct_name, melting:[$melting_min_c, $melting_max_c]);
+        )?
+        $(
+            mat_add!($struct_name, ignition_c:[$ignition_min, $ignition_max]);
+        )?
+        $(
+            mat_add!($struct_name, burning_c:[$burning_min, $burning_max]);
+        )?
+        $(
+            mat_add!($struct_name, heat_value_mj:[$heat_value_min, $heat_value_max]);
+        )?
     };
 }
 macro_rules! new_mat {
@@ -83,24 +126,24 @@ macro_rules! new_mat {
 }
 macro_rules! mat_add {
     // Add Melting for material
-    ($struct_name:ident, melting_min:$melting_min_c:expr, melting_max:$melting_max_c:expr) => {
+    ($struct_name:ident, melting:[$min_c:expr, $max_c:expr]) => {
         impl Melting for $struct_name {
             fn get_melting_avg_c(&self) -> Celsius {
-                ($melting_min_c + $melting_max_c) * 0.5
+                ($min_c + $max_c) * 0.5
             }
             fn get_melting_avg_k(&self) -> Kelvin {
-                (($melting_min_c + $melting_max_c) * 0.5) + 273.15
+                (($min_c + $max_c) * 0.5) + 273.15
             }
         }
     };
     // Add Density for material
-    ($struct_name:ident, density_min:$density_min_gcm3:expr, density_max:$density_max_gcm3:expr) => {
+    ($struct_name:ident, dencity_gsm3:[$min_gsm3:expr, $max_gsm3:expr]) => {
         impl Density for $struct_name {
             fn get_density_avg_gcm3(&self) -> Gsm3 {
-                ($density_min_gcm3 + $density_max_gcm3) * 0.5
+                ($min_gsm3 + $max_gsm3) * 0.5
             }
             fn get_density_avg_kgm3(&self) -> KGm3 {
-                (($density_min_gcm3 + $density_max_gcm3) * 0.5) * 1000.0
+                (($min_gsm3 + $max_gsm3) * 0.5) * 1000.0
             }
         }
     };
@@ -125,6 +168,46 @@ macro_rules! mat_add {
             }
         }
     };
+    // Add Ignition for material without subgroup
+    ($struct_name:ident, ignition_c:[$min_c:expr, $max_c:expr]) => {
+        impl Ignition for $struct_name {
+            fn get_ignition_avg_c(&self) -> Celsius {
+                ($min_c + $max_c) * 0.5
+            }
+            fn get_ignition_avg_k(&self) -> Kelvin {
+                (($min_c + $max_c) * 0.5) + 273.15
+            }
+        }
+    };
+    // Add Burning for material without subgroup
+    ($struct_name:ident, burning_c:[$min_c:expr, $max_c:expr]) => {
+        impl Burning for $struct_name {
+            fn get_burning_avg_c(&self) -> Celsius {
+                ($min_c + $max_c) * 0.5
+            }
+            fn get_burning_avg_k(&self) -> Kelvin {
+                (($min_c + $max_c) * 0.5) + 273.15
+            }
+        }
+    };
+    // Add HeatValue for material
+    ($struct_name:ident, heat_value_mj:[$min_mj:expr, $max_mj:expr]) => {
+        impl HeatValue for $struct_name {
+            fn get_heat_value_avg_kkal(&self) -> kkal_kg {
+                ($min_mj + $max_mj) * 0.5
+            }
+            fn get_heat_value_avg_mj(&self) -> MJ_kg {
+                (($min_mj + $max_mj) * 0.5) * 238.8458966275
+            }
+        }
+    };
+    // Add Element for material
+    ($struct_name:ident, $number:expr, $symbol:literal) => {
+        impl Element for $struct_name {
+            fn get_symbol(&self) -> &'static str {$symbol}
+            fn get_number(&self) -> u8 {$number}
+        }
+    };
 }
 
 /// Number of material structures
@@ -135,6 +218,10 @@ pub const ALL_MATERIALS: &[&dyn Material] = &[
     &Basalt,
     &Granite,
     &Obsidian,
+    &BrownCoal,
+    &Eclogite,
+    &Gold,
+    &Hydrogen,
 ];
 
 /// SLang = Supported Language. ISO 639-1
@@ -215,27 +302,78 @@ pub trait Igneous {
 pub trait Metamorphic {
 
 }
+/// Ignition temperature
+pub trait Ignition {
+    fn get_ignition_avg_c(&self) -> Celsius {0.0}
+    fn get_ignition_avg_k(&self) -> Kelvin {0.0}
+}
+/// Burning, max temperature
+pub trait Burning {
+    fn get_burning_avg_c(&self) -> Celsius {0.0}
+    fn get_burning_avg_k(&self) -> Kelvin {0.0}
+}
+pub trait HeatValue {
+    fn get_heat_value_avg_kkal(&self) -> kkal_kg {0.0}
+    fn get_heat_value_avg_mj(&self) -> MJ_kg {0.0}
+}
+/// This is an element of the periodic table of chemical elements.
+pub trait Element {
+    fn get_symbol(&self) -> &'static str {""}
+    fn get_number(&self) -> u8;
+}
 
 new_rock!(
     Basalt,
     names: [SLang::RU:"Базальт", SLang::EN:"Basalt"],
     group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Extrusive],
-    melting_c: [1100.0, 1250.0],
     dencity_gsm3:[2.6, 3.1],
+    melting_c: [1100.0, 1250.0],
 );
 new_rock!(
     Granite,
     names: [SLang::RU:"Гранит", SLang::EN:"Granite"],
     group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Intrusive],
-    melting_c: [1215.0, 1260.0],
     dencity_gsm3:[2.6, 3.0],
+    melting_c: [1215.0, 1260.0],
 );
 new_rock!(
     Obsidian,
     names:[SLang::RU:"Обсидиан", SLang::EN:"Obsidian"],
     group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Extrusive],
-    melting_c: [1200.0, 1500.0],
     dencity_gsm3:[2.5, 2.6],
+    melting_c: [1200.0, 1500.0],
+);
+new_rock!(
+    BrownCoal,
+    names: [SLang::RU:"Бурый уголь", SLang::EN:"Brown Coal"],
+    group: [Sedimentary, GroupRock::Sedimentary, SubgroupSedimentary, SubgroupSedimentary::Biogenic],
+    dencity_gsm3:[1.2, 1.5],
+    ignition_c: [250.0, 250.0],
+    burning_c: [1900.0, 1900.0],
+    heat_value_mj: [14.0, 16.0],
+);
+new_rock!(
+    Eclogite,
+    names: [SLang::RU:"Эклогит", SLang::EN:"Eclogite"],
+    group: [Metamorphic, GroupRock::Metamorphic],
+    dencity_gsm3: [3.3, 3.7],
+);
+
+new_elem!(
+    Gold,
+    names: [SLang::RU:"Золото", SLang::EN:"Gold"],
+    element: [79, "Au"],
+    dencity_gsm3: [19.3, 19.32],
+    melting_c: [1064.18, 1064.18],
+);
+new_elem!(
+    Hydrogen,
+    names: [SLang::RU:"Водород", SLang::EN:"Hydrogen"],
+    element: [1, "H"],
+    dencity_gsm3: [0.0000899, 0.0000899],
+    ignition_c: [510.0, 590.0],
+    burning_c: [2600.0, 2900.0],
+    heat_value_mj: [141.865, 141.865],
 );
 
 #[cfg(test)]
@@ -269,11 +407,27 @@ mod tests {
     use super::*;
     #[test]
     fn test1() {
+        println!("COUNT_MATERIALS: {}",COUNT_MATERIALS);
         println!(
-            "{} density:{}g/cm³ melting:{}°C",
-            Obsidian.get_name(SLang::RU),
+            "{} density: {}g/cm³ melting: {}°C",
+            Obsidian.get_name(SLang::EN),
             Obsidian.get_density_avg_gcm3(),
             Obsidian.get_melting_avg_c()
-        )
+        );
+        println!(
+            "{} number: {}, density: {}g/cm³ melting: {}°C",
+            Gold.get_name(SLang::EN),
+            Gold.get_number(),
+            Gold.get_density_avg_gcm3(),
+            Gold.get_melting_avg_c(),
+        );
+        println!(
+            "{} number: {}, density: {}g/cm³, ignition: {}°C, burning_c: {}°C",
+            Hydrogen.get_name(SLang::EN),
+            Hydrogen.get_number(),
+            Hydrogen.get_density_avg_gcm3(),
+            Hydrogen.get_ignition_avg_c(),
+            Hydrogen.get_burning_avg_c(),
+        );
     }
 }
