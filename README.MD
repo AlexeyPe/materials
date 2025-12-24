@@ -6,19 +6,16 @@ materials - is a library of material data.<br>
 Macros are used to create structures.<br>
 Materials support localization.
 
-trait | Rock | Element |
-| -- | -- | -- |
-*Material | ✔ | ✔
-Element | ❌ | ✔
-🗻Rock | ✔ | ❌
-🗻Sedimentary | ✔ | ❌
-🗻Igneous | ✔ | ❌
-🗻Metamorphic | ✔ | ❌
-🧾Density | ✔ | ✔
-🔥Melting | ✔ | ✔
-🔥Ignition | ✔ | ✔
-🔥Burning | ✔ | ✔
-🔥HeatValue | ✔ | ✔
+trait | Rock | Element | Alloy |
+| -- | -- | -- | -- |
+🧾Density | ✔ | ✔ | ✔
+🔥Melting | ✔ | ✔ | ✔
+🔥Ignition | ✔ | ✔ | 
+🔥Burning | ✔ | ✔ | 
+🔥HeatValue | ✔ | ✔ | 
+🗻Sedimentary | ✔ | ❌ | ❌
+🗻Igneous | ✔ | ❌ | ❌
+🗻Metamorphic | ✔ | ❌ | ❌
 
 `* - has localization`
 

@@ -46,6 +46,7 @@ macro_rules! new_elem {
         $(burning_c:[$burning_min:expr, $burning_max:expr],)?
         // example_1 - heat_value_mj: [14.0, 15.5]
         $(heat_value_mj:[$heat_value_min:expr, $heat_value_max:expr],)?
+        $(metal:$metal:path,)?
     ) => {
         new_mat!($struct_name, names:[$($field_name : $lang_literal),*]);
         mat_add!($struct_name, dencity_gsm3:[$density_min, $density_max]);
@@ -61,6 +62,9 @@ macro_rules! new_elem {
         )?
         $(
             mat_add!($struct_name, heat_value_mj:[$heat_value_min, $heat_value_max]);
+        )?
+        $(
+            mat_add!($struct_name, metal: $metal);
         )?
     };
 }
@@ -100,6 +104,31 @@ macro_rules! new_rock {
         $(
             mat_add!($struct_name, heat_value_mj:[$heat_value_min, $heat_value_max]);
         )?
+    };
+}
+macro_rules! new_alloy {
+    (
+        // example_1 - Gold
+        $struct_name:ident,
+        // example_1 - names: [RU:"Золото", EN:"Gold"]
+        // example_2 - names: [EN:"Gold"]
+        names: [$($field_name:path : $lang_literal:literal),*],
+        chemical_composition: [$([$element:ident, $element_min:expr, $element_max:expr],)*],
+        // example_1 - dencity_gsm3: [1.1, 1.5]
+        dencity_gsm3: [$density_min:expr, $density_max:expr],
+        // example_1 - melting_c: [1450.0, 1500.0]
+        melting_c:[$melting_min_c:expr, $melting_max_c:expr],
+    ) => {
+        new_mat!($struct_name, names:[$($field_name : $lang_literal),*]);
+        mat_add!($struct_name, dencity_gsm3:[$density_min, $density_max]);
+        mat_add!($struct_name, melting:[$melting_min_c, $melting_max_c]);
+        mat_add!($struct_name, alloy: {
+            chemical_composition: [
+                $(
+                    [$element, $element_min, $element_max],
+                )*
+            ],
+        });
     };
 }
 macro_rules! new_mat {
@@ -208,6 +237,24 @@ macro_rules! mat_add {
             fn get_number(&self) -> u8 {$number}
         }
     };
+    // Add Metal for material
+    ($struct_name:ident, metal:$metal:path) => {
+        impl Metal for $struct_name {
+            const GROUP_METAL: GroupMetal = $metal; 
+        }
+    };
+    // Add Alloy for material
+    ($struct_name:ident, alloy:{
+        chemical_composition: [$([$element:ident, $element_min:expr, $element_max:expr],)*],
+    }) => {
+        impl Alloy for $struct_name {
+            const CHEMICAL_COMPOSITION: &'static [(&'static dyn Element, f32, f32)] = &[
+                $(
+                    (&$element, $element_min, $element_max),
+                )*
+            ];
+        }
+    }
 }
 
 /// Number of material structures
@@ -220,8 +267,18 @@ pub const ALL_MATERIALS: &[&dyn Material] = &[
     &Obsidian,
     &BrownCoal,
     &Eclogite,
-    &Gold,
+
     &Hydrogen,
+    &Gold,
+    &Iron,
+    &Aluminium,
+    &Copper,
+    &Zinc,
+    &Magnesium,
+    &Manganese,
+
+    &Brass,
+    &Dural,
 ];
 
 /// SLang = Supported Language. ISO 639-1
@@ -263,6 +320,17 @@ pub enum SubgroupSedimentary {
     /// Formed as a result of weathering processes, volcanism, tectonic and man-made activity.<br>
     /// Обломочные/Терригенные - образуются как результат процессов выветривания, вулканизма, тектонической и техногенной активности.
     Clastic,
+}
+
+pub enum GroupMetal {
+    // Щелочные
+    Alkali,
+    // Щёлочноземельные
+    AlkalineEarth,
+    // Переходные
+    Transition,
+    // Лёгкие
+    PostTransition,
 }
 
 pub trait Material {
@@ -322,29 +390,41 @@ pub trait Element {
     fn get_number(&self) -> u8;
 }
 
-new_rock!(
-    Basalt,
+pub trait Metal {
+    const GROUP_METAL: GroupMetal;
+}
+
+pub trait Alloy {
+    // fn get_chemical_composition() -> &'static [(&'static dyn Element, f32, f32)];
+    const CHEMICAL_COMPOSITION: &'static [(&'static dyn Element, f32, f32)];
+}
+
+// impl Alloy for Brass {
+//     // fn get_chemical_composition() -> &'static [(&'static dyn Element, f32, f32)] {
+//     //     &[(&Copper, 50.0, 90.0)]
+//     // }
+//     const CHEMICAL_COMPOSITION: &'static [(&'static dyn Element, f32, f32)] = &[(&Copper, 50.0, 90.0)];
+// }
+
+new_rock!( Basalt,
     names: [SLang::RU:"Базальт", SLang::EN:"Basalt"],
     group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Extrusive],
     dencity_gsm3:[2.6, 3.1],
     melting_c: [1100.0, 1250.0],
 );
-new_rock!(
-    Granite,
+new_rock!( Granite,
     names: [SLang::RU:"Гранит", SLang::EN:"Granite"],
     group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Intrusive],
     dencity_gsm3:[2.6, 3.0],
     melting_c: [1215.0, 1260.0],
 );
-new_rock!(
-    Obsidian,
+new_rock!( Obsidian,
     names:[SLang::RU:"Обсидиан", SLang::EN:"Obsidian"],
     group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Extrusive],
     dencity_gsm3:[2.5, 2.6],
     melting_c: [1200.0, 1500.0],
 );
-new_rock!(
-    BrownCoal,
+new_rock!( BrownCoal,
     names: [SLang::RU:"Бурый уголь", SLang::EN:"Brown Coal"],
     group: [Sedimentary, GroupRock::Sedimentary, SubgroupSedimentary, SubgroupSedimentary::Biogenic],
     dencity_gsm3:[1.2, 1.5],
@@ -352,28 +432,89 @@ new_rock!(
     burning_c: [1900.0, 1900.0],
     heat_value_mj: [14.0, 16.0],
 );
-new_rock!(
-    Eclogite,
+new_rock!( Eclogite,
     names: [SLang::RU:"Эклогит", SLang::EN:"Eclogite"],
     group: [Metamorphic, GroupRock::Metamorphic],
     dencity_gsm3: [3.3, 3.7],
 );
 
-new_elem!(
-    Gold,
+new_elem!( Gold,
     names: [SLang::RU:"Золото", SLang::EN:"Gold"],
     element: [79, "Au"],
     dencity_gsm3: [19.3, 19.32],
     melting_c: [1064.18, 1064.18],
+    metal: GroupMetal::Transition,
 );
-new_elem!(
-    Hydrogen,
+new_elem!( Iron,
+    names: [SLang::RU:"Железо", SLang::EN:"Iron"],
+    element: [26, "Fe"],
+    dencity_gsm3: [7.874, 7.874],
+    melting_c: [1538.85, 1538.85],
+    metal: GroupMetal::Transition,
+);
+new_elem!( Aluminium,
+    names: [SLang::RU:"Алюминий", SLang::EN:"Aluminium"],
+    element: [13, "Al"],
+    dencity_gsm3: [2.6989, 2.6989],
+    melting_c: [933.5, 933.5],
+    metal: GroupMetal::PostTransition,
+);
+new_elem!( Copper,
+    names: [SLang::RU:"Медь", SLang::EN:"Copper"],
+    element: [29, "Cu"],
+    dencity_gsm3: [8.92, 8.92],
+    melting_c: [1083.4, 1083.4],
+    metal: GroupMetal::Transition,
+);
+new_elem!( Zinc,
+    names: [SLang::RU:"Цинк", SLang::EN:"Zinc"],
+    element: [30, "Zn"],
+    dencity_gsm3: [7.13, 7.13],
+    melting_c: [419.55, 419.55],
+    metal: GroupMetal::Transition,
+);
+new_elem!( Magnesium,
+    names: [SLang::RU:"Магний", SLang::EN:"Magnesium"],
+    element: [12, "Mg"],
+    dencity_gsm3: [1.738, 1.738],
+    melting_c: [650.0, 650.0],
+    metal: GroupMetal::AlkalineEarth,
+);
+new_elem!( Manganese,
+    names: [SLang::RU:"Марганец", SLang::EN:"Manganese"],
+    element: [25, "Mn"],
+    dencity_gsm3: [7.21, 7.21],
+    melting_c: [1243.0, 1243.0],
+    metal: GroupMetal::Transition,
+);
+new_elem!( Hydrogen,
     names: [SLang::RU:"Водород", SLang::EN:"Hydrogen"],
     element: [1, "H"],
     dencity_gsm3: [0.0000899, 0.0000899],
     ignition_c: [510.0, 590.0],
     burning_c: [2600.0, 2900.0],
     heat_value_mj: [141.865, 141.865],
+);
+
+new_alloy!( Brass,
+    names: [SLang::RU:"Латунь", SLang::EN:"Brass"],
+    chemical_composition: [
+        [Copper, 50.0, 90.0],
+        [Zinc, 10.0, 50.0],
+    ],
+    dencity_gsm3: [8.5, 8.7],
+    melting_c: [900.0, 950.0],
+);
+new_alloy!( Dural,
+    names: [SLang::RU:"Дюраль", SLang::EN:"Dural"],
+    chemical_composition: [
+        [Aluminium, 91.0, 95.0],
+        [Copper, 3.8, 4.9],
+        [Magnesium, 1.2, 1.8],
+        [Manganese, 0.3, 0.9],
+    ],
+    dencity_gsm3: [2.79, 2.77],
+    melting_c: [515.0, 640.0],
 );
 
 #[cfg(test)]
