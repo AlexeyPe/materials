@@ -131,6 +131,37 @@ macro_rules! new_alloy {
         });
     };
 }
+macro_rules! new_molecule {
+    (
+        // example_1 - Ammonia
+        $struct_name:ident,
+        // example_1 - names: [RU:"Аммиак", EN:"Ammonia"]
+        // example_2 - names: [EN:"Ammonia"]
+        names: [$($field_name:path : $lang_literal:literal),*],
+        formula_empirical: [$([$element1:ident, $element_count1:expr],)*],
+        formula_molecular: [$([$element2:ident, $element_count2:expr],)*],
+        // example_1 - dencity_gsm3: [0.7723, 0.7723]
+        dencity_gsm3: [$density_min:expr, $density_max:expr],
+        // example_1 - melting_c: [-77.73, -77.73]
+        $(melting_c:[$melting_min_c:expr, $melting_max_c:expr],)?
+    ) => {
+        new_mat!($struct_name, names:[$($field_name : $lang_literal),*]);
+        mat_add!($struct_name, dencity_gsm3:[$density_min, $density_max]);
+        $( mat_add!($struct_name, melting:[$melting_min_c, $melting_max_c]); )?
+        mat_add!($struct_name, molecule: {
+            FORMULA_EMPIRICAL: [
+                $(
+                    [$element1, $element_count1],
+                )*
+            ],
+            FORMULA_MOLECULAR: [
+                $(
+                    [$element2, $element_count2],
+                )*
+            ],
+        });
+    };
+}
 macro_rules! new_mat {
     // new material with names
     ( $struct_name:ident, names: [$($field_name:path : $lang_literal:literal),*]) => {
@@ -254,13 +285,32 @@ macro_rules! mat_add {
                 )*
             ];
         }
-    }
+    };
+    // Add Molecule for material
+    ($struct_name:ident, molecule:{
+        FORMULA_EMPIRICAL: [$([$element1:ident, $element_count1:expr],)*],
+        FORMULA_MOLECULAR: [$([$element2:ident, $element_count2:expr],)*],
+    }) => {
+        impl Molecule for $struct_name {
+            const FORMULA_EMPIRICAL: &'static [(&'static dyn Element, u8)] = &[
+                $(
+                    (&$element1, $element_count1),
+                )*
+            ];
+            const FORMULA_MOLECULAR: &'static [(&'static dyn Element, u8)] = &[
+                $(
+                    (&$element2, $element_count2),
+                )*
+            ];
+        }
+    };
 }
 
 /// Number of material structures
 pub const COUNT_MATERIALS:u32 = ALL_MATERIALS.len() as u32;
 /// SLang size
 pub const COUNT_SUPPORTED_LANGUAGES:u16 = 2;
+
 pub const ALL_MATERIALS: &[&dyn Material] = &[
     &Basalt,
     &Granite,
@@ -269,6 +319,8 @@ pub const ALL_MATERIALS: &[&dyn Material] = &[
     &Eclogite,
 
     &Hydrogen,
+    &Oxygen,
+    &Nitrogen,
     &Gold,
     &Iron,
     &Aluminium,
@@ -279,6 +331,9 @@ pub const ALL_MATERIALS: &[&dyn Material] = &[
 
     &Brass,
     &Dural,
+
+    &Ammonia,
+    &Water,
 ];
 
 /// SLang = Supported Language. ISO 639-1
@@ -406,6 +461,17 @@ pub trait Alloy {
 //     const CHEMICAL_COMPOSITION: &'static [(&'static dyn Element, f32, f32)] = &[(&Copper, 50.0, 90.0)];
 // }
 
+pub trait Molecule {
+    // Shows the ratio of elements (does not show quantity)
+    // Эмпирическая формула (простейшая) - показывает соотношение элементов(не показывает количество)
+    const FORMULA_EMPIRICAL: &'static [(&'static dyn Element, u8)];
+    // Shows the number of elements
+    // Молекулярная формула - показывает количество элементов
+    // Вроде бы в основном в молекуле бывает до 20 атомов элемента
+    // Есть Макромолекулы имеющие миллионы атомов (ДНК), поэтому u8 может поменяться на u32-u64
+    const FORMULA_MOLECULAR: &'static [(&'static dyn Element, u8)];
+}
+
 new_rock!( Basalt,
     names: [SLang::RU:"Базальт", SLang::EN:"Basalt"],
     group: [Igneous, GroupRock::Igneous, SubgroupIgneous, SubgroupIgneous::Extrusive],
@@ -495,6 +561,16 @@ new_elem!( Hydrogen,
     burning_c: [2600.0, 2900.0],
     heat_value_mj: [141.865, 141.865],
 );
+new_elem!( Oxygen,
+    names: [SLang::RU:"Кислород", SLang::EN:"Oxygen"],
+    element: [8, "O"],
+    dencity_gsm3: [0.00142897, 0.00142897],
+);
+new_elem!( Nitrogen,
+    names: [SLang::RU:"Азот", SLang::EN:"Nitrogen"],
+    element: [7, "N"],
+    dencity_gsm3: [0.001251, 0.001251],
+);
 
 new_alloy!( Brass,
     names: [SLang::RU:"Латунь", SLang::EN:"Brass"],
@@ -515,6 +591,33 @@ new_alloy!( Dural,
     ],
     dencity_gsm3: [2.79, 2.77],
     melting_c: [515.0, 640.0],
+);
+
+new_molecule!( Ammonia,
+    names: [SLang::RU:"Аммиак", SLang::EN:"Ammonia"],
+    formula_empirical: [
+        [Nitrogen, 1],
+        [Hydrogen, 3],
+    ],
+    formula_molecular: [
+        [Nitrogen, 1],
+        [Hydrogen, 3],
+    ],
+    dencity_gsm3: [0.7723, 0.7723],
+    melting_c: [-77.73, -77.73],
+);
+new_molecule!( Water,
+    names: [SLang::RU:"Вода", SLang::EN:"Water"],
+    formula_empirical: [
+        [Hydrogen, 2],
+        [Oxygen, 1],
+    ],
+    formula_molecular: [
+        [Hydrogen, 2],
+        [Oxygen, 1],
+    ],
+    dencity_gsm3: [1.0, 1.0],
+    melting_c: [0.0, 0.0],
 );
 
 #[cfg(test)]
